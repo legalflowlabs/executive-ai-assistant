@@ -12,10 +12,77 @@ const supabase = createClient(
 )
 
 async function extractText(fileBytes: Uint8Array, fileName: string): Promise<string> {
-  // This is a simplified version - in production you'd want to use proper document parsing
-  // based on file type (PDF, DOCX, etc.)
-  const decoder = new TextDecoder("utf-8")
-  return decoder.decode(fileBytes)
+  // Get file extension to determine parsing method
+  const fileExt = fileName.split('.').pop()?.toLowerCase() || ""
+  
+  if (fileExt === "pdf") {
+    try {
+      // For PDF files, use a more advanced extraction approach
+      // First, attempt to extract text with PDF structure awareness
+      const decoder = new TextDecoder("utf-8")
+      const rawText = decoder.decode(fileBytes)
+      
+      // Enhanced PDF text extraction
+      // Look for common PDF text patterns
+      const textBlocks = []
+      
+      // Pattern 1: Look for text objects with BT...ET blocks
+      const btEtBlocks = rawText.match(/BT[\s\S]+?ET/g) || []
+      for (const block of btEtBlocks) {
+        // Extract text strings from the block
+        const textStrings = block.match(/(\([^\)]+\)|<[^>]+>)\s*Tj/g) || []
+        for (const textString of textStrings) {
+          // Clean up the text string
+          let text = textString
+            .replace(/(\([^\)]+\)|<[^>]+>)\s*Tj/, '$1')
+            .replace(/^\(|\)$/g, '') // Remove outer parentheses
+            .replace(/\\\(/g, '(')
+            .replace(/\\\)/g, ')')
+            .replace(/\\n/g, '\n')
+            .replace(/\\r/g, '')
+            .replace(/\\t/g, ' ')
+          
+          textBlocks.push(text)
+        }
+      }
+      
+      // Pattern 2: Look for text arrays with TJ operator
+      const tjArrays = rawText.match(/\[[^\]]+\]\s*TJ/g) || []
+      for (const array of tjArrays) {
+        // Extract text strings from the array
+        const textStrings = array.match(/(\([^\)]+\))/g) || []
+        for (const textString of textStrings) {
+          // Clean up the text string
+          let text = textString
+            .replace(/^\(|\)$/g, '') // Remove outer parentheses
+            .replace(/\\\(/g, '(')
+            .replace(/\\\)/g, ')')
+            .replace(/\\n/g, '\n')
+            .replace(/\\r/g, '')
+            .replace(/\\t/g, ' ')
+          
+          textBlocks.push(text)
+        }
+      }
+      
+      // If we found text blocks, join them with spaces
+      if (textBlocks.length > 0) {
+        return textBlocks.join(' ')
+      }
+      
+      // If no text blocks found, fall back to basic extraction
+      return rawText
+    } catch (error) {
+      console.error(`Error in PDF extraction: ${error.message}. Falling back to basic extraction.`)
+      // Fall back to basic extraction if PDF extraction fails
+      const decoder = new TextDecoder("utf-8")
+      return decoder.decode(fileBytes)
+    }
+  } else {
+    // For non-PDF files, use the original text extraction method
+    const decoder = new TextDecoder("utf-8")
+    return decoder.decode(fileBytes)
+  }
 }
 
 function chunkText(text: string, chunkSize = 1000, overlap = 100): string[] {
