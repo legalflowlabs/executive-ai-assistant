@@ -1,10 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { corsHeaders } from "./_shared/cors.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-import { log } from "./_lib/utils.ts"
+import { log } from "./utils/utils.ts"
+import { generateEmbedding } from "./utils/documentProcessor.ts"
 
 // Environment variables
-const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
 
@@ -13,38 +13,6 @@ const supabase = createClient(
   SUPABASE_URL!,
   SUPABASE_SERVICE_ROLE_KEY!
 )
-
-/**
- * Generate embedding for query text using OpenAI API
- * @param text - The text to generate embedding for
- * @returns The embedding as an array of numbers
- */
-async function generateEmbedding(text: string): Promise<number[]> {
-  try {
-    const response = await fetch("https://api.openai.com/v1/embeddings", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${OPENAI_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        input: text,
-        model: "text-embedding-3-small"
-      })
-    })
-    
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(`OpenAI API error: ${JSON.stringify(errorData)}`)
-    }
-    
-    const result = await response.json()
-    return result.data[0].embedding
-  } catch (error) {
-    log(`Error generating embedding: ${error.message}`, "error")
-    throw error
-  }
-}
 
 /**
  * Main handler for retrieving relevant data

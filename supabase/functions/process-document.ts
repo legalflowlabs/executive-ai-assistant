@@ -1,9 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { corsHeaders } from "./_shared/cors.ts"
-import { getFileExtension, log } from "./lib/utils.ts"
-import { extractText } from "./lib/textExtractor.ts"
-import { chunkText } from "./lib/textChunker.ts"
-import { downloadFile, createDocumentRecord, processDocumentChunks } from "./lib/documentProcessor.ts"
+import { getFileExtension, log } from "./utils/utils.ts"
+import { extractText } from "./utils/textExtractor.ts"
+import { chunkText } from "./utils/textChunker.ts"
+import { downloadFile, createDocumentRecord, processDocumentChunks } from "./utils/documentProcessor.ts"
 
 /**
  * Main handler for document processing
