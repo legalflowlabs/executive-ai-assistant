@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  marker-service:
+    build: ./marker
+    environment:
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      TESSDATA_PREFIX: /usr/share/tesseract-ocr/4.00/tessdata
+    volumes:
+      - ./marker:/app
+    ports:
+      - "8000:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
